@@ -1,6 +1,9 @@
 #include <iostream>
-#include "parser.cpp"
+#include <vector>
+
+#include "parser.h"
 #include "task.h"
+#include "solver.h"
 
 using namespace ::mad;
 
@@ -13,7 +16,10 @@ int main(int argc, char** argv) {
     std::cout << "Data read:"
               << "\n\n";
     for (auto& task : tasks) task.print();
-    std::cout << "==================\n";
+        std::cout << "==================\n";
+
+    Solver solver = Solver(tasks);
+    solver.solve();
 
     return 0;
 }

@@ -1,10 +1,10 @@
 CXX		 = g++
 CPPFLAGS = -std=c++17 -Wall
 SRCS 	 = *.cpp
-BIN 	 = ./bin
-NAME     = main.out
+BIN		 = ./bin
+NAME	 = main.out
 TARGET	 = $(BIN)/$(NAME)
-OBJS 	 = $(subst .cpp,.o,$(SRCS))
+OBJS	 = $(subst .cpp,.o,$(SRCS))
 RM		 = rm -f
 
 default: debug

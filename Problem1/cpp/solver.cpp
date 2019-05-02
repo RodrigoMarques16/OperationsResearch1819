@@ -53,7 +53,7 @@ void print_queue(std::priority_queue<A,B,C> q, int iter) {
 }
 
 void Solver::calc_es() {
-    std::cout << "Calculating ES\n";
+    std::cout << "Calculating (ES, EF)\n";
 
     //int tick = 0;
     int min_duration = -1;
@@ -80,7 +80,7 @@ void Solver::calc_es() {
         Task current = q.top();
         q.pop();
 
-        min_duration = std::max(min_duration, earliest_start[current.id]);
+        min_duration = std::max(min_duration, earliest_start[current.id]+current.duration);
 
         for (int& succ_id : current.successors) {
             Task& succ = tasks[succ_id];
@@ -96,8 +96,8 @@ void Solver::calc_es() {
     }
 
     for(size_t i = 0; i < tasks.size(); i++)
-        std::cout << '\t' << i << ": " << earliest_start[i] << '\n';
-
+        std::cout << '\t' << i << ": (" << earliest_start[i] << ", " << earliest_start[i] + tasks[i].duration << ")\n";
+    std::cout << "Minimum duration: " << min_duration << '\n';
     print_separator();
 }
 

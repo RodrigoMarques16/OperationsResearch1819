@@ -12,45 +12,69 @@ Solver::Solver(std::vector<Task>& _tasks) {
 }
 
 void Solver::degrees() {
-    for (auto& task : tasks)
+    std::cout << "Calculating entry degrees\n";
+    for (auto& task : tasks) {
         for (auto& succ_id : task.successors) {
             task.out_degree++;
             tasks[succ_id].in_degree++;
         }
+    }
+
+    for (auto& task : tasks)
+        std::cout << '\t' << task.id << ": " << task.in_degree << '\n';
+
+    print_separator();
 }
 
 void Solver::find_start() {
-    for (auto& task : tasks)
-        if (task.in_degree == 0) start_tasks.push_back(task);
-}
-
-void Solver::solve() { calc_es(); }
-
-int clamp_min(int value, int min) {
-    if (value < min) return min;
-    return value;
-}
-
-struct compare {
-    bool cmp(const Task& lhs, const Task& rhs) {
-        return lhs.duration < rhs.duration;
+    std::cout << "Finding start activities\n";
+    for (auto& task : tasks){
+        if (task.in_degree == 0) {
+            start_tasks.emplace_back(task.id);
+            std::cout << '\t' << task.id << '\n';
+        }
     }
-};
+
+    print_separator();
+}
+
+void Solver::solve() { 
+    calc_es(); 
+}
+
+template<typename A, typename B, typename C>
+void print_queue(std::priority_queue<A,B,C> q, int iter) {
+    std::cout << "Queue on iteration " << iter << '\n';
+    while(!q.empty()) {
+        std::cout << q.top().id << " ";
+        q.pop();
+    }
+    std::cout << '\n';
+}
 
 void Solver::calc_es() {
+    std::cout << "Calculating ES\n";
+
     int min_duration = -1;
     int min_workers = 0;
     int avail_workers = 0;
+    int iter = 1;
 
     auto compare = [](const Task& lhs, const Task& rhs) {
         return lhs.id < rhs.id;
     };
 
-    std::priority_queue<Task&, std::vector<Task&>, decltype(compare)> q(
-        compare, start_tasks);
+    // switch to struct {int id, int duration} if Task is too slow
+    std::priority_queue<Task, std::vector<Task>, decltype(compare)> q(compare);
+    
+    for(const int& id : start_tasks)
+        q.push(tasks[id]);
 
     while (!q.empty()) {
-        Task& current = q.top();
+        //print_queue(q, iter);
+        iter++;
+
+        Task current = q.top();
         q.pop();
 
         min_duration = std::max(min_duration, earliest_start[current.id]);
@@ -61,35 +85,16 @@ void Solver::calc_es() {
             earliest_start[succ_id] =
                 std::max(earliest_start[succ_id],
                          earliest_start[current.id] + current.duration);
-            
+
             succ.in_degree--;
-            if (succ.in_degree == 0)    
+            if (succ.in_degree == 0) 
                 q.push(succ);
         }
     }
 
-}  // namespace mad
+    for(int i = 0; i < tasks.size(); i++)
+        std::cout << '\t' << i << ": " << earliest_start[i] << '\n';
 
-std::atomic<int> tick, workers, workers_available;
-void Solver::task_sim(Task& task) {
-    int time_left = task.duration;
-    while (time_left--) tick++;
-    workers_available += task.workers;
-    for (int next : task.successors) task_sim(tasks[next]);
-}
-
-void Solver::sim() {
-    tick = workers = workers_available = 0;
-
-    for (Task& task : start_tasks) {
-        workers_available += task.workers;
-        std::thread t([&]() {
-            int time_left = task.duration;
-            while (time_left--) {
-                tick++;
-            }
-        });
-    }
 }
 
 }  // namespace mad

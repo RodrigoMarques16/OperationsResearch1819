@@ -3,19 +3,21 @@
 #ifndef __solver_h__
 #define __solver_h__
 
-#include <vector>
+#include <iostream>
+#include <atomic>
 #include <queue>
 #include <thread>
-#include <atomic>
+#include <vector>
+
+#include "helper.h"
 #include "task.h"
 
 namespace mad {
 
 struct Solver {
-
     std::vector<Task> tasks;
-    std::vector<Task&> start_tasks;
-    
+
+    std::vector<int> start_tasks;
     std::vector<int> earliest_start;
     std::vector<int> predecessor;
 

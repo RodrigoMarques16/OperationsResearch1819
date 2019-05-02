@@ -4,19 +4,19 @@
 #include "parser.h"
 #include "task.h"
 #include "solver.h"
+#include "helper.h"
 
 using namespace ::mad;
-
-void tarefa(int id, int ids[], int dur, int ntrab);
 
 int main(int argc, char** argv) {
     Parser parser(argv[1]);
     std::vector<Task> tasks = parser.parse();
 
-    std::cout << "Data read:"
-              << "\n\n";
-    for (auto& task : tasks) task.print();
-        std::cout << "==================\n";
+    std::cout << "Reading data\n";
+    for (auto& task : tasks)
+        task.print();
+    print_separator();
+
 
     Solver solver = Solver(tasks);
     solver.solve();

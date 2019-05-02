@@ -6,9 +6,6 @@ Solver::Solver(std::vector<Task>& _tasks) {
     tasks = _tasks;
     earliest_start = std::vector<int>(tasks.size(), 0);
     predecessor = std::vector<int>(tasks.size(), 0);
-
-    degrees();
-    find_start();
 }
 
 void Solver::degrees() {
@@ -39,6 +36,8 @@ void Solver::find_start() {
 }
 
 void Solver::solve() { 
+    degrees();
+    find_start();
     calc_es(); 
 }
 

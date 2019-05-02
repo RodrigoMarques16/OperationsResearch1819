@@ -55,20 +55,23 @@ void print_queue(std::priority_queue<A,B,C> q, int iter) {
 void Solver::calc_es() {
     std::cout << "Calculating ES\n";
 
+    //int tick = 0;
     int min_duration = -1;
-    int min_workers = 0;
-    int avail_workers = 0;
+    //int min_workers = 0;
+    //int avail_workers = 0;
     int iter = 1;
 
     auto compare = [](const Task& lhs, const Task& rhs) {
-        return lhs.id < rhs.id;
+        return lhs.duration < rhs.duration;
     };
 
-    // switch to struct {int id, int duration} if Task is too slow
+    // switch to struct {int duration, int id} if Task is too slow
     std::priority_queue<Task, std::vector<Task>, decltype(compare)> q(compare);
     
-    for(const int& id : start_tasks)
+    for(const int& id : start_tasks) {
         q.push(tasks[id]);
+        //avail_workers += tasks[id].workers;
+    }
 
     while (!q.empty()) {
         //print_queue(q, iter);
@@ -92,9 +95,10 @@ void Solver::calc_es() {
         }
     }
 
-    for(int i = 0; i < tasks.size(); i++)
+    for(size_t i = 0; i < tasks.size(); i++)
         std::cout << '\t' << i << ": " << earliest_start[i] << '\n';
 
+    print_separator();
 }
 
 }  // namespace mad

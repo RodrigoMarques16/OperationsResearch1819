@@ -28,12 +28,7 @@ struct Task {
           workers(workers),
           successors(successors) {}
 
-    // Copy constructor
-    Task(const Task& other)
-        : id(other.id),
-          duration(other.duration),
-          workers(other.workers),
-          successors(other.successors) {}
+   Task(const Task& other) = default;
 
     void print() {
         std::cout << '\t' << id << ": "
@@ -44,6 +39,10 @@ struct Task {
         std::cout << "\n";
     }
     
+    friend bool operator<(const Task& lhs, const Task& rhs) {
+        return lhs.duration < rhs.duration;
+    }
+
 };
 
 }  // namespace mad

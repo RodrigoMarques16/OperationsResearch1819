@@ -1,6 +1,10 @@
-.vscode/*
-*.bin
-*.txt
+# Project
+**/.vscode/*
+
+# Documentation
+**/html
+**/latex
+**doxygenconfig
 
 # Prerequisites
 *.d
@@ -35,3 +39,4 @@
 *.out
 *.app
 Problem1/cpp/.depend
+

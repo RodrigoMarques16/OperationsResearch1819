@@ -3,271 +3,290 @@
 namespace mad {
 
 Solver::Solver(std::vector<Task>& _tasks) {
-    tasks = _tasks;
-    earliest_start = std::vector<int>(tasks.size(), 0);
-    earliest_finish = std::vector<int>(tasks.size(), 0);
-    predecessor = std::vector<int>(tasks.size(), 0);
+    tasks           = _tasks;
+    size_t size     = tasks.size();
+    earliest_start  = std::vector<int>(size, 0);
+    latest_start    = std::vector<int>(size, 0);
+    earliest_finish = std::vector<int>(size, 0);
+    latest_finish   = std::vector<int>(size, 0);
+    free_slack      = std::vector<int>(size, 0);
+    total_slack     = std::vector<int>(size, 0);
 }
 
-void Solver::solve() { 
+const Solution Solver::solve() {
     degrees();
     key_tasks();
-    forward_pass(); 
+    forward_pass();
+    make_events();
     calc_workers();
     backward_pass();
     calc_slack();
     find_critical();
+    //minimum_workers();
+
+    return {
+        min_duration,
+        min_workers,
+        min_workers_fixed,
+        critical_workers,
+        earliest_start,
+        latest_start,
+        earliest_finish,
+        latest_finish,
+        free_slack,
+        total_slack,
+        critical_tasks,
+        tasks
+    };
 }
 
 void Solver::degrees() {
-    std::cout << "Calculating (entry, out) degrees\n";
     for (auto& task : tasks) {
-        for (auto& succ_id : task.successors) {
-            task.out_degree++;
+        task.out_degree = task.successors.size();
+        for (auto& succ_id : task.successors)
             tasks[succ_id].in_degree++;
-        }
     }
-
-    for (auto& task : tasks)
-        std::cout << '\t' << task.id << ": (" << task.in_degree << ", "
-                  << task.out_degree << ")\n";
-
-    print_separator();
 }
 
 void Solver::key_tasks() {
-    std::cout << "Finding key activities\n";
-    
     for (auto& task : tasks) {
         if (task.in_degree == 0)
             start_tasks.emplace_back(task.id);
-        if(task.out_degree == 0)
+        if (task.out_degree == 0)
             final_tasks.emplace_back(task.id);
     }
+}
 
-    std::cout << "Start tasks:\n\t";
-    for(auto& id : start_tasks)
-        std::cout << id << ", ";
-    std::cout << '\n';
+void Solver::make_events() {
+    for (size_t i = 0; i < tasks.size(); i++) {
+        events.emplace_back(EventType::CONSUME, tasks[i].id, earliest_start[i],
+                            tasks[i].workers);
+        events.emplace_back(EventType::FREE, tasks[i].id, earliest_finish[i],
+                            tasks[i].workers);
+    }
 
-    std::cout << "Final tasks:\n\t";
-    for(auto& id : final_tasks)
-        std::cout << id << ", ";
-    std::cout << '\n';
-
-    print_separator();
+    std::sort(events.begin(), events.end());
 }
 
 void Solver::forward_pass() {
-    std::cout << "Calculating (ES, EF)\n";
+    std::queue<Task> q;
 
     min_duration = -1;
-
-    std::queue<Task> q;
     
-    for(const int& id : start_tasks) {
+    for (const int& id : start_tasks) {
         q.push(tasks[id]);
         earliest_finish[id] = tasks[id].duration;
-        predecessor[id] = -1;
     }
 
     while (!q.empty()) {
-
         Task current = q.front();
         q.pop();
 
-        int duration = earliest_start[current.id]+current.duration;
-        if (min_duration < duration) {
-            min_duration = duration;
-        }
+        int duration = earliest_start[current.id] + current.duration;
 
-        min_duration = std::max(min_duration, earliest_start[current.id]+current.duration);
+        min_duration = std::max(min_duration, duration);
 
         for (int& succ_id : current.successors) {
             Task& succ = tasks[succ_id];
 
             int pred_finish = earliest_start[current.id] + current.duration;
+
             if (earliest_start[succ_id] < pred_finish) {
-                earliest_start[succ_id] = pred_finish;
-                earliest_finish[succ_id] = pred_finish + tasks[succ_id].duration;
-                predecessor[succ_id] = current.id;
+                earliest_start[succ_id]  = pred_finish;
+                earliest_finish[succ_id] = pred_finish
+                                           + tasks[succ_id].duration;
             }
 
             succ.in_degree--;
-            if (succ.in_degree == 0) 
+            if (succ.in_degree == 0)
                 q.push(succ);
         }
     }
-
-    for (size_t i = 0; i < tasks.size(); i++)
-        std::cout << '\t' << i << ": (" << earliest_start[i] << ", "
-                  << earliest_finish[i] << ")\n";
-
-    std::cout << "Minimum duration: " << min_duration << '\n';
-
-    print_separator();
 }
 
 void Solver::calc_workers() {
-    std::cout << "Calculating minimum workers for ES\n";
+    int available = 0;
 
-    std::vector<Event> events;
-    
-    for(size_t i = 0; i < tasks.size(); i++) {
-        events.push_back({
-            EventType::CONSUME,
-            earliest_start[i],
-            tasks[i].workers
-        });
-        events.push_back({
-            EventType::FREE,
-            earliest_finish[i],
-            tasks[i].workers
-        });
+    auto event = events.begin();
+    while(event->tick == 0) {
+        available += event->workers;
+        event++;
     }
 
-    auto compare = [](const Event& lhs, const Event& rhs) {
-        return lhs.tick < rhs.tick;
-    };
-
-    std::sort(events.begin(), events.end(), compare);
-
-    min_workers = 0;
-    int avail_workers = 0;
-
-    for(auto& event : events) {
-        if (event.tick != 0) break;
-        avail_workers += event.workers;
-    } 
-    min_workers = avail_workers;
-
-    for(auto& event : events) {
+    min_workers_fixed = available;
+    
+    for (auto& event : events) {
         if (event.type == EventType::FREE) {
-            avail_workers += event.workers;
+            available += event.workers;
         } else {
-            if (avail_workers < event.workers) {
-                min_workers += event.workers - avail_workers;
-                avail_workers = 0;
+            if (available < event.workers) {
+                min_workers_fixed += event.workers - available;
+                available = 0;
             } else {
-                avail_workers -= event.workers;
+                available -= event.workers;
             }
         }
     }
-
-    std::cout << '\t' << min_workers << '\n';
-
-    print_separator();
 }
 
 std::vector<Task> Solver::transpose() {
-    std::vector<Task> tp = tasks; 
+    std::vector<Task> tp = tasks;
 
-    for(auto& task : tp)
-        task.successors.clear();
+    for (auto& task : tp)
+       task.successors.clear();
 
-    for(auto& task : tasks) 
-        for(auto& id : task.successors)
+    for (auto& task : tasks)
+       for (auto& id : task.successors)
+          tp[id].successors.emplace_back(task.id);
+          
+    /*
+    std::vector<Task> tp = std::vector<Task>(tasks.size());
+    
+    for (auto& task : tasks) {
+        tp[task.id] = Task(task.id, task.duration, task.workers, std::vector<int>());
+        for (auto& id : task.successors)
             tp[id].successors.emplace_back(task.id);
-
-    std::cout << "Transpose:\n";
-    for(auto& task : tp) {
-        std::cout << '\t' << task.id << ": ";
-        for(auto& id : task.successors)
-            std::cout << id << ", ";
-        std::cout << '\n';
     }
-    print_separator();
-
+    */
     return tp;
 }
 
 void Solver::backward_pass() {
     std::vector tp = transpose();
-    
-    std::cout << "Calculating (LS, LF)\n";
-    
+
     latest_finish = std::vector<int>(tasks.size(), min_duration);
-    latest_start = std::vector<int>(tasks.size(), -1);
+    latest_start  = std::vector<int>(tasks.size(), -1);
 
     std::queue<Task> q;
 
-    for(const int& id : final_tasks) {
+    for (const int& id : final_tasks)
         q.push(tp[id]);
-        latest_finish[id] = min_duration;
-    }
 
-    while(!q.empty()) {
+    while (!q.empty()) {
         Task current = q.front();
         q.pop();
 
         for (const int& id : current.successors) {
             Task& succ = tp[id];
 
-            latest_finish[id] =
-                std::min(latest_finish[id],
-                         latest_finish[current.id] - current.duration);
+            int new_ls = latest_finish[current.id] - current.duration;
+            if (latest_finish[id] > new_ls) {
+                latest_finish[id] = new_ls;
+                latest_start[id] = new_ls - tp[id].duration;
+            }
 
             succ.out_degree--;
-            if (succ.out_degree == 0) 
+            if (succ.out_degree == 0)
                 q.push(succ);
         }
     }
 
-    for (size_t i = 0; i < tp.size(); i++) {
+    for (size_t i = 0; i < tp.size(); i++)
         latest_start[i] = latest_finish[i] - tp[i].duration;
-        std::cout << '\t' << i << ": (" << latest_start[i] << ", "
-                  << latest_finish[i] << ")\n"; 
-    }
-    print_separator();
 }
 
 void Solver::calc_slack() {
     total_slack = std::vector<int>(tasks.size());
-    free_slack = std::vector<int>(tasks.size());
+    free_slack  = std::vector<int>(tasks.size());
 
-    std::cout << "Calculating (total, free) slack\n";
-    for(const Task& task : tasks) {
+    for (const Task& task : tasks) {
         int id = task.id;
-        
+
         total_slack[id] = latest_start[id] - earliest_start[id];
 
         int min_es = min_duration;
-        for(const int& succ : task.successors)
+        for (const int& succ : task.successors)
             min_es = std::min(min_es, earliest_start[succ]);
 
         free_slack[id] = min_es - earliest_finish[id];
-
-        std::cout << '\t' << id << ": (" << total_slack[id] << ", " << free_slack[id] << ")\n";
     }
-    print_separator();
 }
 
 void Solver::find_critical() {
-    std::cout << "Calculating critical tasks\n\t";
     critical_workers = 0;
-    
-    for(const Task& task : tasks) {
+
+    for (const Task& task : tasks) {
         if (total_slack[task.id] == 0) {
             critical_tasks.emplace_back(task.id);
             critical_workers += task.workers;
-            
-            std::cout << task.id << ", ";
+        }
+    }
+}
+
+bool Solver::try_workers(int available) {
+    std::priority_queue<Event> q(std::less<Event>(), events);
+    std::vector<int> slack = total_slack;
+
+    while (!q.empty()) {
+        Event event = q.top();
+        q.pop();
+
+        if (event.type == EventType::FREE)
+            available += event.workers;
+        else {
+            if (event.workers > available) {
+                if (slack[event.id] > 0) {
+                    // dfs divergence point here?
+                    event.tick += slack[event.id];
+                    slack[event.id]--;
+                    q.push(event);
+                } else {
+                    return false;
+                }
+            } else {
+                available -= event.workers;
+            }
         }
     }
 
-    std::cout << "\n\tCritical workers: " << critical_workers << '\n';
-    print_separator();
+    return true;
 }
 
-template<typename A>
-void print_queue(std::queue<A> q, int iter) {
-    std::cout << "Queue on iteration " << iter << '\n';
-    while(!q.empty()) {
-        std::cout << q.front().id << " ";
-        q.pop();
+void Solver::minimum_workers() {
+    int low        = critical_workers;
+    int high       = min_workers_fixed;
+    int iterations = 0;
+
+    while (low < high) {
+        iterations++;
+        int mid = low + ((high - low) / 2);
+        std::cout << "BS(" << low << ", " << mid << ", " << high << ")\n";
+
+        if (try_workers(mid))
+            high = mid;
+        else
+            low = mid + 1;
     }
-    std::cout << '\n';
+
+    std::cout << "Minimum workers: " << low << '\n';
+
 }
 
-}  // namespace mad
+namespace out {
+    void print(const Solution& sol) {
+        
+        std::cout << "\n==============================================================\n"
+                  << "|| ";
+        for (int i = 0; i < N_COLUMNS; i++)
+            std::cout << std::setw(3) << columns[i] << " || ";
+        std::cout << '\n'
+                  << "==============================================================\n";
+        for (size_t i = 0; i < sol.tasks.size(); i++) {
+            std::cout << "|| " << std::setw(3) << sol.tasks[i].id << " || "
+                      << std::setw(3) << sol.earliest_start[i] << " || "
+                      << std::setw(3) << sol.earliest_finish[i] << " || "
+                      << std::setw(3) << sol.latest_start[i] << " || "
+                      << std::setw(3) << sol.latest_finish[i] << " || "
+                      << std::setw(3) << sol.total_slack[i] << " || "
+                      << std::setw(3) << sol.free_slack[i] << " || "
+                      << std::setw(7) << sol.tasks[i].workers << " ||\n";
+        }
+        std::cout << "==============================================================\n";
+        std::cout << "|| Minimum duration" << std::setw(12) << " || " << sol.min_duration << std::setw(30) << "||\n";
+        std::cout << "==============================================================\n";
+        std::cout << "|| Minimum workers (fixed) " << " || " << sol.min_workers_fixed << std::setw(31) << "||\n";
+        std::cout << "==============================================================\n";
+    }
+} // namespace out
 
+} // namespace mad

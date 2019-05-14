@@ -12,14 +12,10 @@ int main(int argc, char** argv) {
     Parser parser(argv[1]);
     std::vector<Task> tasks = parser.parse();
 
-    std::cout << "Reading data\n";
-    for (auto& task : tasks)
-        task.print();
-    print_separator();
-
-
     Solver solver = Solver(tasks);
-    solver.solve();
+    Solution sol = solver.solve();
+
+    mad::out::print(sol);
 
     return 0;
 }

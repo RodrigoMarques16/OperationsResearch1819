@@ -41,6 +41,7 @@ const std::vector<Task> Parser::parse() const {
             // Create a new task from data read
             tasks[id-1] = Task(id-1, duration, workers, successors);
         }
+
         return tasks;
     }
 }

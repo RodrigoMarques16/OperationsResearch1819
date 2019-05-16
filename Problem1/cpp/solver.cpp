@@ -292,6 +292,9 @@ namespace out {
         std::cout << "|| Minimum workers " << std::setw(12) << " || " << std::setw(3) << sol.min_workers
                   << std::setw(29) << "||\n";
         std::cout << "==============================================================\n";
+        std::cout << "|| Critical workers " << std::setw(11) << " || " << std::setw(3) << sol.critical_workers
+                  << std::setw(29) << "||\n";
+        std::cout << "==============================================================\n";
     }
 } // namespace out
 

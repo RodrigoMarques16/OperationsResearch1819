@@ -43,8 +43,8 @@ BreakBeforeTernaryOperators: true
 BreakConstructorInitializersBeforeComma: false
 BreakConstructorInitializers: BeforeColon
 BreakInheritanceList: BeforeColon
-BreakStringLiterals: true
-ColumnLimit:     80
+BreakStringLiterals: false
+ColumnLimit:     90
 CommentPragmas:  '^ IWYU pragma:'
 CompactNamespaces: false
 ConstructorInitializerAllOnOneLineOrOnePerLine: false

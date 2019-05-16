@@ -222,28 +222,19 @@ void Solver::find_critical() {
     }
 }
 
-int iterations = 0;
-
-bool Solver::try_workers(int available, std::vector<int> start_time, std::vector<int> slack) {
-    iterations++;
+bool Solver::try_workers(int workers, std::vector<int> start_time, std::vector<int> slack, int position) {
+    int available = workers;
     std::vector<Event> events = make_events(start_time);
 
-    for(size_t i = 0; i < events.size(); i++) {
+    for(size_t i = position; i < events.size(); i++) {
         const Event& event = events[i];
 
-        if (event.type == EventType::FREE){
+        if (event.type == EventType::FREE) {
             available += event.workers;
-        }
-        else {
+        } else {
             if (event.workers > available) {
-                if (slack[event.id] > 0) {
-                    slack[event.id]--;
-                    start_time[event.id]++;
-                    return try_workers(available, start_time, slack);
-                } else {
-
-                    return false;
-                }
+                // TODO: diverge the search
+                return false;
             } else {
                 available -= event.workers;
             }
@@ -257,12 +248,8 @@ void Solver::calc_minimum_workers() {
     int low  = critical_workers;
     int high = min_workers_fixed;
 
-    std::cout << low << " " << high << '\n';
-
     while (low < high) {
-        iterations++;
         int mid = low + ((high - low) / 2);
-        std::cout << "BS(" << low << ", " << mid << ", " << high << ")\n";
 
         if (try_workers(mid, earliest_start, free_slack))
             high = mid;
@@ -271,34 +258,39 @@ void Solver::calc_minimum_workers() {
     }
 
     min_workers = low;
-    std::cout << iterations << '\n';
 }
 
 namespace out {
     void print(const Solution& sol) {
-        
         std::cout << "\n==============================================================\n"
                   << "|| ";
+        
         for (int i = 0; i < N_COLUMNS; i++)
             std::cout << std::setw(3) << columns[i] << " || ";
+        
         std::cout << '\n'
                   << "==============================================================\n";
-        for (size_t i = 0; i < sol.tasks.size(); i++) {
-            std::cout << "|| " << std::setw(3) << sol.tasks[i].id << " || "
-                      << std::setw(3) << sol.earliest_start[i] << " || "
+
+        for (size_t i = 0; i < sol.tasks.size(); i++)
+            std::cout << "|| " 
+                      << std::setw(3) << sol.tasks[i].id        << " || "
+                      << std::setw(3) << sol.earliest_start[i]  << " || "
                       << std::setw(3) << sol.earliest_finish[i] << " || "
-                      << std::setw(3) << sol.latest_start[i] << " || "
-                      << std::setw(3) << sol.latest_finish[i] << " || "
-                      << std::setw(3) << sol.total_slack[i] << " || "
-                      << std::setw(3) << sol.free_slack[i] << " || "
-                      << std::setw(7) << sol.tasks[i].workers << " ||\n";
-        }
+                      << std::setw(3) << sol.latest_start[i]    << " || "
+                      << std::setw(3) << sol.latest_finish[i]   << " || "
+                      << std::setw(3) << sol.total_slack[i]     << " || "
+                      << std::setw(3) << sol.free_slack[i]      << " || "
+                      << std::setw(7) << sol.tasks[i].workers   << " ||\n";
+
         std::cout << "==============================================================\n";
-        std::cout << "|| Minimum duration" << std::setw(12) << " || " << sol.min_duration << std::setw(30) << "||\n";
+        std::cout << "|| Minimum duration" << std::setw(12) << " || " << std::setw(3) << sol.min_duration
+                  << std::setw(29) << "||\n";
         std::cout << "==============================================================\n";
-        std::cout << "|| Minimum workers (fixed) " << " || " << sol.min_workers_fixed << std::setw(31) << "||\n";
+        std::cout << "|| Minimum workers (fixed) "
+                  << " || " << std::setw(3) << sol.min_workers_fixed << std::setw(29) << "||\n";
         std::cout << "==============================================================\n";
-        std::cout << "|| Minimum workers " << std::setw(12) << " || " << sol.min_workers << std::setw(31) << "||\n";
+        std::cout << "|| Minimum workers " << std::setw(12) << " || " << std::setw(3) << sol.min_workers
+                  << std::setw(29) << "||\n";
         std::cout << "==============================================================\n";
     }
 } // namespace out

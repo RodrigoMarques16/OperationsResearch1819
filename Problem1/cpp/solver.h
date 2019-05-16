@@ -36,8 +36,7 @@ struct [[nodiscard]] Solution {
     const std::vector<Task> tasks;
 };
 
-class Solver {
-private:
+struct Solver {
     /**
      * @brief Types of events
      */
@@ -61,10 +60,28 @@ private:
               const int& workers)
             : type(type), id(id), tick(tick), workers(workers) {}
 
+        Event(const Event& other) = default;
+
         friend bool operator<(const Event& lhs, const Event& rhs) {
             return lhs.tick < rhs.tick;
         }
     };
+
+    /**
+     * @brief Construct a new Solver object
+     *
+     * @param tasks
+     */
+    explicit Solver(std::vector<Task>& tasks);
+
+    /**
+     * @brief Schedule the given tasks
+     *
+     * @return Solution
+     */
+    const Solution solve();
+
+private:
 
     std::vector<Task> tasks;      /**> The list of tasks for this instance */
     std::vector<int> start_tasks; /**> Tasks with no dependencies */
@@ -116,7 +133,7 @@ private:
      *
      * Ordered in chronological order.
      */
-    void make_events();
+    std::vector<Event> make_events(std::vector<int> start_time);
 
     /**
      * @brief Calculate the minimum amount of workers
@@ -150,7 +167,7 @@ private:
      * and the start times of each time that achieve that number.
      * @return int
      */
-    void minimum_workers();
+    void calc_minimum_workers();
 
     /**
      * @brief Simulate an event chain with a fixed number of available workers
@@ -159,22 +176,7 @@ private:
      * @return true if project can be completed
      * @return false if more workers are needed
      */
-    bool try_workers(int available);
-
-public:
-    /**
-     * @brief Construct a new Solver object
-     *
-     * @param tasks
-     */
-    explicit Solver(std::vector<Task>& tasks);
-
-    /**
-     * @brief Schedule the given tasks
-     *
-     * @return Solution
-     */
-    const Solution solve();
+    bool try_workers(int available, std::vector<int> start_time, std::vector<int> slack);
 };
 
 namespace out {

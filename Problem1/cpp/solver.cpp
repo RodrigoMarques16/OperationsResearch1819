@@ -1,6 +1,9 @@
 #include "solver.h"
 
+
 namespace mad {
+
+using Event = Solver::Event;
 
 Solver::Solver(std::vector<Task>& _tasks) {
     tasks           = _tasks;
@@ -17,12 +20,12 @@ const Solution Solver::solve() {
     degrees();
     key_tasks();
     forward_pass();
-    make_events();
-    calc_workers();
+    events = make_events(earliest_start);
     backward_pass();
     calc_slack();
     find_critical();
-    //minimum_workers();
+    calc_workers();
+    calc_minimum_workers();
 
     return {
         min_duration,
@@ -57,15 +60,20 @@ void Solver::key_tasks() {
     }
 }
 
-void Solver::make_events() {
+std::vector<Event> Solver::make_events(std::vector<int> start_time) {
+    std::vector<Event> events;
+
     for (size_t i = 0; i < tasks.size(); i++) {
-        events.emplace_back(EventType::CONSUME, tasks[i].id, earliest_start[i],
+        events.emplace_back(EventType::CONSUME, tasks[i].id, start_time[i],
                             tasks[i].workers);
-        events.emplace_back(EventType::FREE, tasks[i].id, earliest_finish[i],
+        events.emplace_back(EventType::FREE, tasks[i].id,
+                            start_time[i] + tasks[i].duration,
                             tasks[i].workers);
     }
 
     std::sort(events.begin(), events.end());
+
+    return events;
 }
 
 void Solver::forward_pass() {
@@ -114,6 +122,7 @@ void Solver::calc_workers() {
     }
 
     min_workers_fixed = available;
+    critical_workers = 0;
     
     for (auto& event : events) {
         if (event.type == EventType::FREE) {
@@ -121,6 +130,8 @@ void Solver::calc_workers() {
         } else {
             if (available < event.workers) {
                 min_workers_fixed += event.workers - available;
+                if (tasks[event.id].is_critical)
+                    critical_workers += event.workers - available;
                 available = 0;
             } else {
                 available -= event.workers;
@@ -203,34 +214,34 @@ void Solver::calc_slack() {
 }
 
 void Solver::find_critical() {
-    critical_workers = 0;
-
-    for (const Task& task : tasks) {
+    for (Task& task : tasks) {
         if (total_slack[task.id] == 0) {
             critical_tasks.emplace_back(task.id);
-            critical_workers += task.workers;
+            task.is_critical = true;
         }
     }
 }
 
-bool Solver::try_workers(int available) {
-    std::priority_queue<Event> q(std::less<Event>(), events);
-    std::vector<int> slack = total_slack;
+int iterations = 0;
 
-    while (!q.empty()) {
-        Event event = q.top();
-        q.pop();
+bool Solver::try_workers(int available, std::vector<int> start_time, std::vector<int> slack) {
+    iterations++;
+    std::vector<Event> events = make_events(start_time);
 
-        if (event.type == EventType::FREE)
+    for(size_t i = 0; i < events.size(); i++) {
+        const Event& event = events[i];
+
+        if (event.type == EventType::FREE){
             available += event.workers;
+        }
         else {
             if (event.workers > available) {
                 if (slack[event.id] > 0) {
-                    // dfs divergence point here?
-                    event.tick += slack[event.id];
                     slack[event.id]--;
-                    q.push(event);
+                    start_time[event.id]++;
+                    return try_workers(available, start_time, slack);
                 } else {
+
                     return false;
                 }
             } else {
@@ -242,24 +253,25 @@ bool Solver::try_workers(int available) {
     return true;
 }
 
-void Solver::minimum_workers() {
-    int low        = critical_workers;
-    int high       = min_workers_fixed;
-    int iterations = 0;
+void Solver::calc_minimum_workers() {
+    int low  = critical_workers;
+    int high = min_workers_fixed;
+
+    std::cout << low << " " << high << '\n';
 
     while (low < high) {
         iterations++;
         int mid = low + ((high - low) / 2);
         std::cout << "BS(" << low << ", " << mid << ", " << high << ")\n";
 
-        if (try_workers(mid))
+        if (try_workers(mid, earliest_start, free_slack))
             high = mid;
         else
             low = mid + 1;
     }
 
-    std::cout << "Minimum workers: " << low << '\n';
-
+    min_workers = low;
+    std::cout << iterations << '\n';
 }
 
 namespace out {
@@ -285,6 +297,8 @@ namespace out {
         std::cout << "|| Minimum duration" << std::setw(12) << " || " << sol.min_duration << std::setw(30) << "||\n";
         std::cout << "==============================================================\n";
         std::cout << "|| Minimum workers (fixed) " << " || " << sol.min_workers_fixed << std::setw(31) << "||\n";
+        std::cout << "==============================================================\n";
+        std::cout << "|| Minimum workers " << std::setw(12) << " || " << sol.min_workers << std::setw(31) << "||\n";
         std::cout << "==============================================================\n";
     }
 } // namespace out

@@ -20,8 +20,9 @@ struct Task {
     int duration;
     int workers;
 
-    int in_degree  = 0;
-    int out_degree = 0;
+    int in_degree    = 0;
+    int out_degree   = 0;
+    bool is_critical = false;
 
     std::vector<int> successors;
 

@@ -86,7 +86,6 @@ private:
     std::vector<Task> tasks;      /**> The list of tasks for this instance */
     std::vector<int> start_tasks; /**> Tasks with no dependencies */
     std::vector<int> final_tasks; /**> Tasks with no dependants */
-    std::vector<Event> events;
 
     std::vector<int> critical_tasks; /**> Tasks which can't be delayed */
 

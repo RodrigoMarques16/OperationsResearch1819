@@ -20,7 +20,6 @@ const Solution Solver::solve() {
     degrees();
     key_tasks();
     forward_pass();
-    events = make_events(earliest_start);
     backward_pass();
     calc_slack();
     find_critical();
@@ -44,9 +43,9 @@ const Solution Solver::solve() {
 }
 
 void Solver::degrees() {
-    for (auto& task : tasks) {
+    for (Task& task : tasks) {
         task.out_degree = task.successors.size();
-        for (auto& succ_id : task.successors)
+        for (const int& succ_id : task.successors)
             tasks[succ_id].in_degree++;
     }
 }
@@ -87,22 +86,21 @@ void Solver::forward_pass() {
     }
 
     while (!q.empty()) {
-        Task current = q.front();
+        const Task current = q.front();
         q.pop();
 
-        int duration = earliest_start[current.id] + current.duration;
+        const int duration = earliest_start[current.id] + current.duration;
 
         min_duration = std::max(min_duration, duration);
 
-        for (int& succ_id : current.successors) {
+        for (const int& succ_id : current.successors) {
             Task& succ = tasks[succ_id];
 
             int pred_finish = earliest_start[current.id] + current.duration;
 
             if (earliest_start[succ_id] < pred_finish) {
                 earliest_start[succ_id]  = pred_finish;
-                earliest_finish[succ_id] = pred_finish
-                                           + tasks[succ_id].duration;
+                earliest_finish[succ_id] = pred_finish + tasks[succ_id].duration;
             }
 
             succ.in_degree--;
@@ -115,7 +113,8 @@ void Solver::forward_pass() {
 void Solver::calc_workers() {
     int available = 0;
 
-    auto event = make_events(start_tasks).begin(); // iterator
+    const auto& events = make_events(earliest_start);
+    auto event = events.begin(); // iterator
     while(event->tick == 0) {
         available += event->workers;
         event++;
@@ -124,7 +123,7 @@ void Solver::calc_workers() {
     min_workers_fixed = available;
     critical_workers = 0;
     
-    for (auto& event : events) {
+    for (const auto& event : events) {
         if (event.type == EventType::FREE) {
             available += event.workers;
         } else {
@@ -143,22 +142,13 @@ void Solver::calc_workers() {
 std::vector<Task> Solver::transpose() {
     std::vector<Task> tp = tasks;
 
-    for (auto& task : tp)
+    for (Task& task : tp)
        task.successors.clear();
 
-    for (auto& task : tasks)
-       for (auto& id : task.successors)
+    for (const Task& task : tasks)
+       for (const int& id : task.successors)
           tp[id].successors.emplace_back(task.id);
-          
-    /*
-    std::vector<Task> tp = std::vector<Task>(tasks.size());
     
-    for (auto& task : tasks) {
-        tp[task.id] = Task(task.id, task.duration, task.workers, std::vector<int>());
-        for (auto& id : task.successors)
-            tp[id].successors.emplace_back(task.id);
-    }
-    */
     return tp;
 }
 
@@ -174,7 +164,7 @@ void Solver::backward_pass() {
         q.push(tp[id]);
 
     while (!q.empty()) {
-        Task current = q.front();
+        const Task current = q.front();
         q.pop();
 
         for (const int& id : current.successors) {
@@ -239,7 +229,7 @@ bool Solver::try_workers(const int workers,
                 if (slack[event.id] == 0)
                     return false;
                 auto new_start_time = std::vector<int>(start_time);
-                auto new_slack = std::vector<int>(slack);
+                auto new_slack      = std::vector<int>(slack);
                 new_start_time[event.id]++;
                 new_slack[event.id]--;
                 return try_workers(workers, new_start_time, new_slack);

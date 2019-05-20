@@ -44,9 +44,9 @@ const Solution Solver::solve() {
 }
 
 void Solver::degrees() {
-    for (Task& task : tasks) {
+    for (auto& task : tasks) {
         task.out_degree = task.successors.size();
-        for (const int& succ_id : task.successors)
+        for (auto& succ_id : task.successors)
             tasks[succ_id].in_degree++;
     }
 }
@@ -60,7 +60,7 @@ void Solver::key_tasks() {
     }
 }
 
-std::vector<Event> Solver::make_events(std::vector<int> start_time) {
+std::vector<Event> Solver::make_events(const std::vector<int>& start_time) {
     std::vector<Event> events;
 
     for (size_t i = 0; i < tasks.size(); i++) {
@@ -115,7 +115,7 @@ void Solver::forward_pass() {
 void Solver::calc_workers() {
     int available = 0;
 
-    auto event = events.begin();
+    auto event = make_events(start_tasks).begin(); // iterator
     while(event->tick == 0) {
         available += event->workers;
         event++;

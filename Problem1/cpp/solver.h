@@ -133,7 +133,7 @@ private:
      *
      * Ordered in chronological order.
      */
-    std::vector<Event> make_events(std::vector<int> start_time);
+    std::vector<Event> make_events(const std::vector<int>& start_time);
 
     /**
      * @brief Calculate the minimum amount of workers

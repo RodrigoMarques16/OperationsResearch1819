@@ -44,15 +44,15 @@ const Solution Solver::solve() {
 }
 
 void Solver::degrees() {
-    for (auto& task : tasks) {
+    for (Task& task : tasks) {
         task.out_degree = task.successors.size();
-        for (auto& succ_id : task.successors)
+        for (const int& succ_id : task.successors)
             tasks[succ_id].in_degree++;
     }
 }
 
 void Solver::key_tasks() {
-    for (auto& task : tasks) {
+    for (const Task& task : tasks) {
         if (task.in_degree == 0)
             start_tasks.emplace_back(task.id);
         if (task.out_degree == 0)
@@ -222,7 +222,10 @@ void Solver::find_critical() {
     }
 }
 
-bool Solver::try_workers(int workers, std::vector<int> start_time, std::vector<int> slack, int position) {
+bool Solver::try_workers(const int workers,
+                         const std::vector<int>& start_time,
+                         const std::vector<int>& slack,
+                         const int position) {
     int available = workers;
     std::vector<Event> events = make_events(start_time);
 
@@ -233,8 +236,13 @@ bool Solver::try_workers(int workers, std::vector<int> start_time, std::vector<i
             available += event.workers;
         } else {
             if (event.workers > available) {
-                // TODO: diverge the search
-                return false;
+                if (slack[event.id] == 0)
+                    return false;
+                auto new_start_time = std::vector<int>(start_time);
+                auto new_slack = std::vector<int>(slack);
+                new_start_time[event.id]++;
+                new_slack[event.id]--;
+                return try_workers(workers, new_start_time, new_slack);
             } else {
                 available -= event.workers;
             }

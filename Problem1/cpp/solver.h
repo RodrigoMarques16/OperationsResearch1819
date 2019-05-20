@@ -176,7 +176,10 @@ private:
      * @return true if project can be completed
      * @return false if more workers are needed
      */
-    bool try_workers(int available, std::vector<int> start_time, std::vector<int> slack, int position=0);
+    bool try_workers(const int available,
+                     const std::vector<int>& start_time,
+                     const std::vector<int>& slack,
+                     const int position = 0);
 };
 
 namespace out {

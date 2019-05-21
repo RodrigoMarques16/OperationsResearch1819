@@ -7,6 +7,7 @@
 #include "helper.h"
 
 using namespace ::mad;
+using namespace ::mad::out;
 
 int main(int argc, char** argv) {
     Parser parser(argv[1]);
@@ -15,7 +16,7 @@ int main(int argc, char** argv) {
     Solver solver = Solver(tasks);
     Solution sol = solver.solve();
 
-    mad::out::print(sol);
+    print(sol);
 
     return 0;
 }

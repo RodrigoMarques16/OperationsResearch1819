@@ -14,6 +14,7 @@ const std::vector<Task> Parser::parse() const {
 
         std::getline(task_file, s);
         std::stringstream ss{s};
+        
         int num_tasks;
         ss >> num_tasks;
 

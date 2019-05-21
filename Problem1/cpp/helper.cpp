@@ -5,6 +5,8 @@ int clamp_min(int value, int min) {
     return value;
 }
 
-void print_separator() {
-    std::cout << "=====================================================================\n";
+void print_separator(int x) {
+    while(x--)
+        std::cout << "=";
+    std::cout << '\n';
 }

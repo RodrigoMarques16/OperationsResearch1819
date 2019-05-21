@@ -13,7 +13,7 @@ int clamp_min(int value, int min);
 /**
  * @brief utility print
  */
-void print_separator();
+void print_separator(int x=3);
 
 #endif
 

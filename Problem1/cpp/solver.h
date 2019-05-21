@@ -15,6 +15,8 @@
 #include <vector>
 #include <optional>
 
+#define DEBUG(X) std::cout << #X << ": " << X << '\n';
+
 namespace mad {
 
 /**
@@ -191,11 +193,19 @@ namespace out {
      */
     static const int N_COLUMNS = 9;
 
+    static const int COLUMN_WIDTH = 6;
+
+    static const int LINE_WIDTH = (COLUMN_WIDTH + 4) * N_COLUMNS + 2;
+
+    static const int IDENTIFIER_WIDTH = (COLUMN_WIDTH + 4) * 3;
+
+    static const int SMALL_WIDTH = (COLUMN_WIDTH + 4) * 4 + 2;
+
     /**
      * @brief Name of the columns to print
      */
     static const std::array<std::string, N_COLUMNS> columns = {
-        "id", "es", "ef", "ls", "lf", "ts", "fs", "st", "workers"};
+        "id", "st", "wrkrs", "es", "ef", "ls", "lf", "ts", "fs"};
 
     /**
      * @brief Print a formatted solution to stdout
@@ -211,6 +221,9 @@ namespace out {
      * @param filename the file to write to
      */
     void write_csv(const Solution& sol, std::string& filename);
+
+    template<typename T>
+    void print_stat(std::string_view s, T stat, int w);
 
 } // namespace out
 

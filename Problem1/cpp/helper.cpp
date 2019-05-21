@@ -6,5 +6,5 @@ int clamp_min(int value, int min) {
 }
 
 void print_separator() {
-    std::cout << "==================\n";
+    std::cout << "=====================================================================\n";
 }

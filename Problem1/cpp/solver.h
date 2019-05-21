@@ -13,6 +13,7 @@
 #include <iostream>
 #include <queue>
 #include <vector>
+#include <optional>
 
 namespace mad {
 
@@ -33,6 +34,7 @@ struct [[nodiscard]] Solution {
     const std::vector<int> free_slack;
     const std::vector<int> total_slack;
     const std::vector<int> critical_tasks;
+    const std::vector<int> start_times;
     const std::vector<Task> tasks;
 };
 
@@ -95,6 +97,7 @@ private:
     std::vector<int> latest_finish;
     std::vector<int> free_slack;
     std::vector<int> total_slack;
+    std::vector<int> start_times;
 
     int min_duration;
     int min_workers;
@@ -175,10 +178,10 @@ private:
      * @return true if project can be completed
      * @return false if more workers are needed
      */
-    bool try_workers(const int available,
-                     const std::vector<int>& start_time,
-                     const std::vector<int>& slack,
-                     const int position = 0);
+    std::optional<std::vector<int>> try_workers(const int available,
+                                                const std::vector<int>& start_time,
+                                                const std::vector<int>& slack,
+                                                const int position = 0);
 };
 
 namespace out {
@@ -186,13 +189,13 @@ namespace out {
     /**
      * @brief Number of columns to print
      */
-    static const int N_COLUMNS = 8;
+    static const int N_COLUMNS = 9;
 
     /**
      * @brief Name of the columns to print
      */
     static const std::array<std::string, N_COLUMNS> columns = {
-        "id", "es", "ef", "ls", "lf", "ts", "fs", "workers"};
+        "id", "es", "ef", "ls", "lf", "ts", "fs", "st", "workers"};
 
     /**
      * @brief Print a formatted solution to stdout

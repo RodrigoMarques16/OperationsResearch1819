@@ -23,6 +23,7 @@ const Solution Solver::solve() {
     forward_pass();
     backward_pass();
     calc_slack();
+    free_slack = calc_free_slack(earliest_start);
     find_critical();
     calc_workers();
     calc_minimum_workers();
@@ -206,19 +207,23 @@ void Solver::backward_pass() {
 
 void Solver::calc_slack() {
     total_slack = std::vector<int>(tasks.size());
-    free_slack  = std::vector<int>(tasks.size());
+    for (const Task& task : tasks) 
+        total_slack[task.id] = latest_start[task.id] - earliest_start[task.id];
+}
+
+std::vector<int> Solver::calc_free_slack(std::vector<int> start_time) {
+    std::vector<int> free_slack  = std::vector<int>(tasks.size());
 
     for (const Task& task : tasks) {
-        const int id = task.id;
-
-        total_slack[id] = latest_start[id] - earliest_start[id];
-
         int min_es = min_duration;
+        
         for (const int& succ : task.successors)
             min_es = std::min(min_es, earliest_start[succ]);
-
-        free_slack[id] = min_es - earliest_finish[id];
+            
+        free_slack[task.id] = min_es - earliest_finish[task.id];
     }
+
+    return free_slack;
 }
 
 void Solver::find_critical() {
@@ -230,11 +235,10 @@ void Solver::find_critical() {
     }
 }
 
-std::optional<std::vector<int>>
-Solver::try_workers(const int workers,
-                    const std::vector<int>& start_time,
-                    const std::vector<int>& slack,
-                    const int position) {
+std::optional<std::vector<int>> Solver::try_workers(const int workers,
+                                     const std::vector<int>& start_time,
+                                     const std::vector<int>& slack,
+                                     const int position) {
     int available = workers;
     std::vector<Event> events = make_events(start_time);
 
@@ -247,12 +251,10 @@ Solver::try_workers(const int workers,
             if (event.workers > available) {
                 if (slack[event.id] == 0)
                     return std::nullopt;
-
                 auto new_start_time = std::vector<int>(start_time);
                 auto new_slack      = std::vector<int>(slack);
                 new_start_time[event.id]++;
                 new_slack[event.id]--;
-
                 return try_workers(workers, new_start_time, new_slack);
             } else {
                 available -= event.workers;
@@ -262,6 +264,46 @@ Solver::try_workers(const int workers,
 
     return start_time;
 }
+
+/*
+std::optional<std::vector<int>>
+Solver::try_workers(const int workers,
+                    const std::vector<int>& start_time,
+                    const int position) {
+
+    int available = workers;
+    std::vector<Event> events = make_events(start_time);
+    std::vector<int> slack = calc_free_slack(start_time);
+
+    for(size_t i = 0; i < events.size(); i++) {
+        const Event& event = events[i];
+
+        if (event.type == EventType::FREE) {
+            available += event.workers;
+        } else {
+            if (event.workers > available) {
+                for(size_t id = 0; id < start_time.size(); id++) {
+                    if (id == position) break;
+                    while(slack[id] > 0) {
+                        auto new_start_time = std::vector<int>(start_time);
+                        new_start_time[id]++;
+                        
+                        auto result = try_workers(workers, new_start_time, id);
+                        if (result.has_value()) 
+                            return result;
+
+                        slack[id]--;
+                    }
+                }
+                return std::nullopt;
+            } else {
+                available -= event.workers;
+            }
+        }
+    }
+
+    return start_time;
+}*/
 
 
 void Solver::calc_minimum_workers() {

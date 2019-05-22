@@ -14,6 +14,7 @@
 #include <queue>
 #include <vector>
 #include <optional>
+#include <algorithm>
 
 #define DEBUG(X) std::cout << #X << ": " << X << '\n';
 
@@ -160,6 +161,8 @@ private:
      * @brief Calculate total and free slack
      */
     void calc_slack();
+
+    std::vector<int> calc_free_slack(std::vector<int>);
 
     /**
      * @brief Finds which tasks are critical and cannot be delayed

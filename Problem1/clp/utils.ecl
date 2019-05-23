@@ -41,7 +41,6 @@ filterById(L, [Id|Ids],  [X|Xs]) :-
 	filterById(L, Ids, Xs).
 
 %%
-%
 % sum_list(Xs, Sum)
 %
 % True if Sum is the sum of all X in Xs

@@ -40,6 +40,12 @@ filterById(L, [Id|Ids],  [X|Xs]) :-
 	myMember(L, Id, X),
 	filterById(L, Ids, Xs).
 
+%%
+%
+% sum_list(Xs, Sum)
+%
+% True if Sum is the sum of all X in Xs
+%
 sum_list(Xs, Sum) :- sum_list(Xs, 0, Sum).
 sum_list([], Sum, Sum).
 sum_list([X|Xs], Sum0, Sum) :-

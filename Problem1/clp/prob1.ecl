@@ -18,7 +18,7 @@
 :- ensure_loaded(utils).
 :- ensure_loaded(restr).
 
-test :- solve(ex1).
+test :- solve(ex0).
 
 %% solve(Instance)
 
@@ -39,8 +39,8 @@ solve(Instance) :-
     
     % Groups
     zip(Ids, StartTimes, StartTimesById),
-    zip(Ids, Durations, DurationsById),
-    zip(Ids, Workers, WorkersById),
+    %zip(Ids, Durations, DurationsById),
+    %zip(Ids, Workers, WorkersById),
     
     computeTheEndTimes(Ids, StartTimes, StartTimesById, Concl),
 
@@ -55,11 +55,9 @@ solve(Instance) :-
 
     % Critical tasks
     critical(StartTimesById, CritSts, CritDurs, CritWrks),
-    writeln(CritSts),
     cumulative(CritSts, CritDurs, CritWrks, CritWorkers),
     get_min_list(CritSts),
-    term_variables([CritSts, CritWorkers], V),
-    labeling(V), 
+    get_min(CritWorkers, CritWorkers),
     write('Critical workers: '),
     writeln(CritWorkers),
 
@@ -105,14 +103,10 @@ minimumWorkers :-
     
     % Groups
     zip(Ids, StartTimes, StartTimesById),
-    zip(Ids, Durations, DurationsById),
-    zip(Ids, Workers, WorkersById),
     
     computeTheEndTimes(Ids, StartTimes, StartTimesById, Concl),
-
     get_min(Concl, Concl),
 
-    % Minimum workers 
     sum_list(Workers, SumWorkers),
     MinWorkers #:: 1 .. SumWorkers,
 

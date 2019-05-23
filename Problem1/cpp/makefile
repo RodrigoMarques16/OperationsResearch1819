@@ -10,7 +10,7 @@ RM       = rm -f
 default: debug
 
 release: $(OBS)
-	$(CXX) $(CPPFLAGS) -Ofast $(SRCS) -o $(TARGET) $(OBS)
+	$(CXX) $(CPPFLAGS) -O3 $(SRCS) -o $(TARGET) $(OBS)
 
 debug: $(OBS)
 	$(CXX) $(CPPFLAGS) -g $(SRCS) -o $(TARGET) $(OBS)

@@ -66,9 +66,7 @@ solve(Instance) :-
     % Minimum workers for fixed start time
     cumulative(StartTimes, Durations, Workers, MinWorkers),
     get_min_list(StartTimes),
-    term_variables([StartTimes, MinWorkers], Vars),
-    labeling(Vars),
-    
+    get_min(MinWorkers, MinWorkers),
     write('Fixed minimum workers: '),
     writeln(MinWorkers),
 

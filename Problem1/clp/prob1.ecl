@@ -22,9 +22,8 @@ test :- solve(ex1).
 
 %% solve(Instance)
 
-% Compiles a database of tasks and 
-% calls all other solver predicates
-% Writes the solutions found
+%% 
+% Main
 %
 solve(Instance) :-
 	compile(Instance),
@@ -73,23 +72,33 @@ solve(Instance) :-
     write('Fixed minimum workers: '),
     writeln(MinWorkers),
 
-    solve2.
-
+    minimumWorkers.
+%%
+% critical(Tasks, StartTimes, Durations, Workers)
+%
+% Instantiates StartTimes, Durations and Workers with values
+% of critical tasks
+%
 critical([], [], [], []).
 critical([v(Id,S)|Tasks], [S|Sts], [D|Ds], [W|Ws] ) :-
     get_domain_size(S,1),
     tarefa(Id, _, D, W),
-    critical(Tasks, Sts, Ds, Ws), !.
-
+    critical(Tasks, Sts, Ds, Ws), 
+    !.
 critical([_|Tasks], Sts, Ds, Ws) :-
     critical(Tasks, Sts, Ds, Ws).
 
-solve2 :-
-	getData(Ids, Durations, Workers),
+%%
+% minimumWorkers
+%
+% Prints the minimum number of workers for the loaded instance
+%
+minimumWorkers :-
+    getData(Ids, Durations, Workers),
 
     % Restrict lengths
-	length(Ids, TaskNo),
-	length(StartTimes, TaskNo),
+    length(Ids, TaskNo),
+    length(StartTimes, TaskNo),
 
     % Bounds 
 	StartTimes #:: 0 .. 1.0Inf,

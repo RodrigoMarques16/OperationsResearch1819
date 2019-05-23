@@ -50,12 +50,23 @@ solve(Instance) :-
     write('Project conclusion: '),
     writeln(Concl),
 
-    % Minimum workers for fixed start time
     sum_list(Workers, SumWorkers),
     MinWorkers #:: 1 .. SumWorkers,
+    CritWorkers #:: 1 .. SumWorkers,
 
+    % Critical tasks
+    critical(StartTimesById, CritSts, CritDurs, CritWrks),
+    writeln(CritSts),
+    cumulative(CritSts, CritDurs, CritWrks, CritWorkers),
+    get_min_list(CritSts),
+    term_variables([CritSts, CritWorkers], V),
+    labeling(V), 
+    write('Critical workers: '),
+    writeln(CritWorkers),
+
+    % Minimum workers for fixed start time
     cumulative(StartTimes, Durations, Workers, MinWorkers),
-    get_min_st(StartTimes),
+    get_min_list(StartTimes),
     term_variables([StartTimes, MinWorkers], Vars),
     labeling(Vars),
     
@@ -63,6 +74,15 @@ solve(Instance) :-
     writeln(MinWorkers),
 
     solve2.
+
+critical([], [], [], []).
+critical([v(Id,S)|Tasks], [S|Sts], [D|Ds], [W|Ws] ) :-
+    get_domain_size(S,1),
+    tarefa(Id, _, D, W),
+    critical(Tasks, Sts, Ds, Ws), !.
+
+critical([_|Tasks], Sts, Ds, Ws) :-
+    critical(Tasks, Sts, Ds, Ws).
 
 solve2 :-
 	getData(Ids, Durations, Workers),

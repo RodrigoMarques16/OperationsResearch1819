@@ -26,15 +26,15 @@ test :- solve(ex1).
 % Main
 %
 solve(Instance) :-
-	compile(Instance),
-	getData(Ids, Durations, Workers),
+    compile(Instance),
+    getData(Ids, Durations, Workers),
 
     % Restrict lengths
-	length(Ids, TaskNo),
-	length(StartTimes, TaskNo),
+    length(Ids, TaskNo),
+    length(StartTimes, TaskNo),
 
     % Bounds 
-	StartTimes #:: 0 .. 1.0Inf,
+    StartTimes #:: 0 .. 1.0Inf,
     Concl #:: 0 .. 1.0Inf,
     
     % Groups

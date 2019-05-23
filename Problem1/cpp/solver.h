@@ -88,11 +88,11 @@ struct Solver {
 
 private:
 
-    std::vector<Task> tasks;      /**> The list of tasks for this instance */
-    std::vector<int> start_tasks; /**> Tasks with no dependencies */
-    std::vector<int> final_tasks; /**> Tasks with no dependants */
+    std::vector<Task> tasks;      /**< The list of tasks for this instance */
+    std::vector<int> start_tasks; /**< Tasks with no dependencies */
+    std::vector<int> final_tasks; /**< Tasks with no dependants */
 
-    std::vector<int> critical_tasks; /**> Tasks which can't be delayed */
+    std::vector<int> critical_tasks; /**< Tasks which can't be delayed */
 
     std::vector<int> earliest_start;
     std::vector<int> latest_start;
@@ -102,10 +102,10 @@ private:
     std::vector<int> total_slack;
     std::vector<int> start_times;
 
-    int min_duration;
-    int min_workers;
-    int min_workers_fixed;
-    int critical_workers;
+    int min_duration;       /**< Minimum total duration of the project */
+    int min_workers;        /**< Minimum number of workers needed */
+    int min_workers_fixed;  /**< Minimum number of workers assuming earliest start */
+    int critical_workers;   /**< Workers needed for critical tasks */
 
     /**
      * @brief Calculate entry and out degrees of each task.
@@ -191,9 +191,6 @@ private:
 
 namespace out {
 
-    /**
-     * @brief Number of columns to print
-     */
     static const int N_COLUMNS = 9;
 
     static const int COLUMN_WIDTH = 6;
@@ -216,15 +213,7 @@ namespace out {
      * @param sol a solution
      */
     void print(const Solution& sol);
-
-    /**
-     * @brief Write a solution in csv format to a given file
-     *
-     * @param sol a solution
-     * @param filename the file to write to
-     */
-    void write_csv(const Solution& sol, std::string& filename);
-
+    
     template<typename T>
     void print_stat(std::string_view s, T stat, int w);
 

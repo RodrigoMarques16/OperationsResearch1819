@@ -73,6 +73,7 @@ solve(Instance) :-
     writeln(MinWorkers),
 
     minimumWorkers.
+    
 %%
 % critical(Tasks, StartTimes, Durations, Workers)
 %
